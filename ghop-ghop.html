@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shake or Move</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #368066, #64072994);
+      text-align: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      animation: wiggle 1s infinite;
+    }
+
+    p {
+      font-size: 1.2em;
+      margin-top: 10px;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 0.9em;
+      color: #222;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    #startMsg {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: block;
+    }
+
+    #insultBox {
+      font-size: 2em;
+      font-weight: bold;
+      color: red;
+      margin-top: 20px;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    @keyframes bounce {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="main">
+    <h1>🚨 Double Tap anywhere to begin! 🚨</h1>
+    <p>🎧 Increase your volume for better experience!</p>
+    <div id="startMsg">👆 Tap the screen to start the madness!</div>
+  </div>
+
+  <div class="footer">
+    Created by Aryan Singh
+  </div>
+
+  <audio id="funnySound" src="audio.mp3" preload="auto" loop></audio>
+
+  <script>
+    let lastX = null, lastY = null, lastZ = null;
+    let isTriggered = false;
+    const shakeThreshold = 12;
+    const audio = document.getElementById("funnySound");
+    const startMsg = document.getElementById("startMsg");
+
+    const insults = [
+      "Abe chutiye, coding tere bas ka nahi!",
+      "Gandu, tera dimaag BIOS mode mein atka hua hai!",
+      "Bevakuf, YouTube pe 'how to think' search kar!",
+      "Laude, tere jaise logon ke liye error 404: brain not found!",
+      "Tu shake kare ya break, kuch nahi hone wala bete!",
+      "BC, internet tera hai ya ullu ka pattha ka?",
+      "Keyboard pe mat hil, dimaag hila thoda!",
+      "Teri soch aur calculator dono outdated hain!",
+      "Tu developer nahi, system crash ka reason hai!",
+      "Agar tujhe developer banna hai to Instagram pe 'CodewithAryan' se ja ke sikh!",
+      "Jaldi jaa kar check kar!",
+      "💢 NIKAL JAA MADHARCHOD 💢"
+    ];
+
+    function triggerAction() {
+      if (isTriggered) return;
+      isTriggered = true;
+      audio.play();
+
+      const main = document.getElementById("main");
+      main.innerHTML = `
+        <h1 style="color:red;">🔥 TERE LIYE MESSAGE AA RAHA HAI 🔥</h1>
+        <div id="insultBox"></div>
+      `;
+
+      startInsultCycle();
+    }
+
+    function startInsultCycle() {
+      const insultBox = document.getElementById("insultBox");
+      let index = 0;
+
+      function showNextInsult() {
+        insultBox.style.opacity = 0;
+        insultBox.style.animation = 'none';
+        void insultBox.offsetWidth; // trigger reflow to restart animation
+        setTimeout(() => {
+          insultBox.textContent = insults[index];
+          insultBox.style.opacity = 1;
+          insultBox.style.animation = 'bounce 0.5s ease-out forwards';
+          index = (index + 1) % insults.length;
+        }, 500);
+      }
+
+      showNextInsult();
+      setInterval(showNextInsult, 5000);
+    }
+
+    function enableListeners() {
+      if ('DeviceMotionEvent' in window) {
+        window.addEventListener("devicemotion", function(event) {
+          const acc = event.accelerationIncludingGravity;
+          if (!acc?.x || !acc?.y || !acc?.z) return;
+
+          if (lastX !== null) {
+            let deltaX = Math.abs(lastX - acc.x);
+            let deltaY = Math.abs(lastY - acc.y);
+            let deltaZ = Math.abs(lastZ - acc.z);
+            if ((deltaX + deltaY + deltaZ) > shakeThreshold) {
+              triggerAction();
+            }
+          }
+
+          lastX = acc.x;
+          lastY = acc.y;
+          lastZ = acc.z;
+        }, true);
+      }
+
+      // Mouse movement
+      let lastMouseX = null, lastMouseY = null;
+      document.addEventListener("mousemove", (e) => {
+        if (lastMouseX !== null && lastMouseY !== null) {
+          let dx = Math.abs(e.clientX - lastMouseX);
+          let dy = Math.abs(e.clientY - lastMouseY);
+          if (dx + dy > 100) {
+            triggerAction();
+          }
+        }
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      });
+
+      document.addEventListener("click", triggerAction);
+      document.addEventListener("touchstart", triggerAction);
+    }
+
+    document.body.addEventListener("click", () => {
+      startMsg.style.display = "none";
+      audio.play().then(() => {
+        audio.pause();
+        enableListeners();
+      }).catch(err => {
+        console.error("Audio failed to play:", err);
+        alert("Please allow audio playback in your browser settings.");
+      });
+    }, { once: true });
+  </script>
+</body>
+</html>
